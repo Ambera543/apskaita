@@ -600,7 +600,7 @@ app.use("/report/brangu", async (req, res) => {
   let conn;
   try {
     conn = await connect();
-    const { results: ataskaita1 } = await query(
+    const { results: ataskaita } = await query(
       conn,
       `
       select
@@ -612,7 +612,7 @@ app.use("/report/brangu", async (req, res) => {
       limit 3`,
       [nuo, iki],
     );
-    res.render("report/brangu", { ataskaita1, nuo, iki });
+    res.render("report/brangu", { ataskaita, nuo, iki });
   } catch (err) {
     res.render("klaida", { err });
   } finally {
