@@ -535,7 +535,7 @@ app.use("/report/visos", async (req, res) => {
   }
   let iki = new Date(req.body.iki);
   if (isNaN(iki.getTime())) {
-    iki = new Date("2090-12-31");
+    iki = new Date("2099-12-31");
   }
   let conn;
   try {
@@ -556,6 +556,37 @@ app.use("/report/visos", async (req, res) => {
   }
 });
 
+app.use("/report/tipai", async (req, res) => {
+  let nuo = new Date(req.body.nuo);
+  if (isNaN(nuo.getTime())) {
+    nuo = new Date("2000-01-01");
+  }
+  let iki = new Date(req.body.iki);
+  if (isNaN(iki.getTime())) {
+    iki = new Date("2099-12-31");
+  }
+  let conn;
+  try {
+    conn = await connect();
+    const { results: ataskaita } = await query(
+      conn,
+      `
+      select tipai.id, tipai.pavadinimas, sum(kiekis * kaina) as suma
+      from
+        prekes join cekiai on prekes.cekiai_id = cekiai.id
+        right join tipai on prekes.tipai_id = tipai.id
+      where cekiai.data >= ? and cekiai.data <= ? or cekiai.data is null
+      group by tipai.id, tipai.pavadinimas
+      order by tipai.pavadinimas`,
+      [nuo, iki],
+    );
+    res.render("report/tipai", { ataskaita, nuo, iki });
+  } catch (err) {
+    res.render("klaida", { err });
+  } finally {
+    await end(conn);
+  }
+});
 
 app.use("/report/brangu", async (req, res) => {
   let nuo = new Date(req.body.nuo);
@@ -564,30 +595,32 @@ app.use("/report/brangu", async (req, res) => {
   }
   let iki = new Date(req.body.iki);
   if (isNaN(iki.getTime())) {
-    iki = new Date("2090-12-31");
+    iki = new Date("2099-12-31");
   }
   let conn;
   try {
     conn = await connect();
-    const { results: ataskaita } = await query(
+    const { results: ataskaita1 } = await query(
       conn,
       `
       select
        prekes.preke, sum(kiekis * kaina) as suma
       from prekes join cekiai on prekes.cekiai_id = cekiai.id
       where cekiai.data >= ? and cekiai.data <= ? 
-      group by preke
+      group by prekes.preke
       order by suma desc 
       limit 3`,
       [nuo, iki],
     );
-    res.render("report/brangu", { ataskaita, nuo, iki });
+    res.render("report/brangu", { ataskaita1, nuo, iki });
   } catch (err) {
     res.render("klaida", { err });
   } finally {
     await end(conn);
   }
 });
+
+
 
 app.listen(PORT, () => {
   console.log(`Apskaita app listening at http://localhost:${PORT}`);
