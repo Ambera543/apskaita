@@ -571,13 +571,15 @@ app.use("/report/tipai", async (req, res) => {
     const { results: ataskaita } = await query(
       conn,
       `
-      select tipai.id, tipai.pavadinimas, sum(kiekis * kaina) as suma
-      from
-        prekes join cekiai on prekes.cekiai_id = cekiai.id
-        right join tipai on prekes.tipai_id = tipai.id
-      where cekiai.data >= ? and cekiai.data <= ? or cekiai.data is null
-      group by tipai.id, tipai.pavadinimas
-      order by tipai.pavadinimas`,
+      select tip.id, tip.pavadinimas, sum(kiekis * kaina) as suma
+      from prekes join cekiai on prekes.cekiai_id = cekiai.id
+        right join tipai on prekes.tipai_id = tipai.id,
+        tipai as tip
+      where cekiai.data >= ? and cekiai.data <= ?
+      and tipai.id = tip.id 
+      or cekiai.data is null
+      group by  tip.id, tip.pavadinimas
+      order by tip.pavadinimas`,
       [nuo, iki],
     );
     res.render("report/tipai", { ataskaita, nuo, iki });
